@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 
 #specific files
-/Data/SQLExperiments.sql
+/Data/SQLexperiments.sql
 
 # C extensions
 *.so
