@@ -3,6 +3,9 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+#specific files
+/Data/SQLExperiments.sql
+
 # C extensions
 *.so
 
