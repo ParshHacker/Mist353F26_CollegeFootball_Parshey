@@ -20,7 +20,7 @@ import requests
 HERE = Path(__file__).resolve().parent
 CACHE_DIR = HERE / "cache"  # raw API responses, so re-runs don't spend API calls
 
-
+API_KEY = "J9PkCxjjzH4064BH7XUGdHVPoqjro3zgmoF5V6s2J7+8Xfro0vEtSeqJU+ZOosDJ"
 def _load_env_file(path=HERE / ".env"):
     """Read KEY=value lines from .env into os.environ (real env vars win)."""
     if not path.exists():
