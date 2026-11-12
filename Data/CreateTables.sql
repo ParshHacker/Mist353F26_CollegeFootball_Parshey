@@ -38,7 +38,7 @@ go
 create table Stadium (
     StadiumID INT NOT NULL IDENTITY(1,1),
     StadiumName NVARCHAR(50) NOT NULL,
-    StadiumStreetAddress NVARCHAR(100) NOT NULL,
+    StadiumStreetAddress NVARCHAR(100) NULL,
     StadiumCity NVARCHAR(50) NOT NULL,
     StadiumState CHAR(2) NOT NULL,
     StadiumCapacity INT NOT NULL,
@@ -135,7 +135,7 @@ go
 create table Player (
     PlayerID int not null identity(1,1),
     PlayerName NVARCHAR(100) not NULL,
-    PlayerDateOfBirth date not NULL,
+    PlayerDateOfBirth date NULL,
     constraint PK_Player primary key (PlayerID),
     constraint UQ_Player UNIQUE (PlayerName)
 );
@@ -292,4 +292,4 @@ create table CoachRoster (
     constraint UQ_CoachRoster UNIQUE (CoachID, RosterID),
     constraint FK_CoachRoster_Coach FOREIGN KEY (CoachID) REFERENCES Coach(CoachID),
     constraint FK_CoachRoster_Roster FOREIGN KEY (RosterID) REFERENCES Roster(RosterID)
-);
+);
