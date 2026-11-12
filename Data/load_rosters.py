@@ -13,7 +13,7 @@ import re
 import pyodbc
 
 from load_games import REFRESH_YEARS, YEARS, cached_get, pick
-from load_teams import CONFERENCES, CONN_STR
+from load_teams import CONFERENCES, CONN_STR, check_settings
 
 # Allowed by CK_Position (all are seeded; only KEEP_POSITIONS get players)
 POSITIONS = ["QB", "RB", "WR", "TE", "OL", "DL", "LB", "CB", "S", "K", "P"]
@@ -78,6 +78,7 @@ def load_season_stats(year):
 
 
 def main():
+    check_settings()
     conn = pyodbc.connect(CONN_STR)
     cur = conn.cursor()
 

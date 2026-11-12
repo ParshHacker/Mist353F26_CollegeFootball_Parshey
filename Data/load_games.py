@@ -8,14 +8,16 @@ Setup:
     pip install requests pyodbc tzdata
 """
 import json
-import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import pyodbc
 import requests
 
-from load_teams import BASE_URL, CONFERENCES, CONN_STR, HEADERS, get_or_create_stadium
+from load_teams import (
+    BASE_URL, CONFERENCES, CONN_STR, HEADERS,
+    cache_path, check_settings, get_or_create_stadium,
+)
 
 YEARS = [2025, 2026]
 SEASON_TYPES = ["regular", "postseason"]
@@ -32,7 +34,8 @@ def pick(d, *keys):
 
 
 def cached_get(path, params, cache_file, refresh=False):
-    if os.path.exists(cache_file) and not refresh:
+    cache_file = cache_path(cache_file)  # Data/cache/, wherever you run from
+    if cache_file.exists() and not refresh:
         with open(cache_file) as f:
             return json.load(f)
     resp = requests.get(f"{BASE_URL}{path}", headers=HEADERS, params=params, timeout=60)
@@ -44,6 +47,7 @@ def cached_get(path, params, cache_file, refresh=False):
 
 
 def main():
+    check_settings()
     conn = pyodbc.connect(CONN_STR)
     cur = conn.cursor()
 

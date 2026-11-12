@@ -3,25 +3,49 @@ Load Conference, Stadium, and Team tables from the CollegeFootballData.com API.
 
 Setup:
     pip install requests pyodbc
-    CFBD_API_KEY
-    CONN_STR
+    Copy .env.example to .env (same folder as this file) and fill in:
+        CFBD_API_KEY     your CollegeFootballData.com key
+        CFB_DB_PASSWORD  the SQL login's password
+    Run AlterForApiLoad.sql once against the database.
+
+Run order: load_teams.py, then load_games.py, then load_rosters.py.
 """
 import json
 import os
+from pathlib import Path
 
 import pyodbc
 import requests
+
+HERE = Path(__file__).resolve().parent
+CACHE_DIR = HERE / "cache"  # raw API responses, so re-runs don't spend API calls
+
+
+def _load_env_file(path=HERE / ".env"):
+    """Read KEY=value lines from .env into os.environ (real env vars win)."""
+    if not path.exists():
+        return
+    for line in path.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+_load_env_file()
+
+API_KEY = os.environ.get("CFBD_API_KEY", "")
+DB_PASSWORD = os.environ.get("CFB_DB_PASSWORD", "")
 
 CONN_STR = (
     "Driver={ODBC Driver 18 for SQL Server};"
     "Server=mist353f26parshley-server.database.windows.net;"
     "Database=CollegeFootball_RDB_Parshley;"
     "Uid=NandaSurendra;"
-    "Pwd=;"
+    f"Pwd={{{DB_PASSWORD.replace('}', '}}')}}};"
     "Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;"
 )
-
-API_KEY = "J9PkCxjjzH4064BH7XUGdHVPoqjro3zgmoF5V6s2J7+8Xfro0vEtSeqJU+ZOosDJ"
 
 BASE_URL = "https://api.collegefootballdata.com"
 HEADERS = {"Authorization": f"Bearer {API_KEY}", "Accept": "application/json"}
@@ -33,9 +57,28 @@ YEAR = 2026  # season whose conference membership you want
 SAVE_RAW_JSON = True  # keep a local copy so re-runs don't spend API calls
 
 
+def check_settings():
+    """Stop with a clear message if the key or password hasn't been set."""
+    missing = [
+        name
+        for name, value in (("CFBD_API_KEY", API_KEY), ("CFB_DB_PASSWORD", DB_PASSWORD))
+        if not value
+    ]
+    if missing:
+        raise SystemExit(
+            f"Missing {' and '.join(missing)}. Put them in {HERE / '.env'} "
+            "(see .env.example) or set them as environment variables."
+        )
+
+
+def cache_path(filename):
+    CACHE_DIR.mkdir(exist_ok=True)
+    return CACHE_DIR / filename
+
+
 def fetch_teams(conference):
-    cache_file = f"teams_{conference}_{YEAR}.json"
-    if os.path.exists(cache_file):
+    cache_file = cache_path(f"teams_{conference}_{YEAR}.json")
+    if cache_file.exists():
         with open(cache_file) as f:
             return json.load(f)
 
@@ -67,6 +110,8 @@ def get_or_create_conference(cur, name):
 
 
 def get_or_create_stadium(cur, loc):
+    # The API has no street address, so StadiumStreetAddress is left NULL
+    # (AlterForApiLoad.sql makes that column nullable).
     name = (loc.get("name") or "Unknown Stadium")[:50]
     city = (loc.get("city") or "Unknown")[:50]
     state = (loc.get("state") or "NA")[:2]
@@ -101,6 +146,7 @@ def insert_team(cur, university, mascot, stadium_id, conference_id):
 
 
 def main():
+    check_settings()
     conn = pyodbc.connect(CONN_STR)
     cur = conn.cursor()
 
